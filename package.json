@@ -1,0 +1,10 @@
+{
+  "name": "ts-super-tiny-compiler",
+  "version": "1.0.0",
+  "main": "complier.ts",
+  "scripts": {
+    "test": "node test.ts"
+  },
+  "author": "junhao Ao",
+  "license": "ISC"
+}
