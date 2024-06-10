@@ -1,7 +1,15 @@
-import type { Token } from "./type";
+import type {
+  Token,
+  ASTNode,
+  Program,
+  NumberLiteral,
+  StringLiteral,
+  CallExpression,
+} from "./type";
 
 /**
  * 分词器
+ * @description 将源代码字符串分割成token
  * @example tokenizer("(add 2 (subtract 4 2))");
  * @param input 源代码字符串
  * @returns tokens 分词结果
@@ -77,4 +85,70 @@ const tokenizer = (input: string): Token[] => {
   return tokens;
 };
 
-export { tokenizer };
+/**
+ * @description 将tokens转换为AST
+ * @param tokens
+ * @returns AST
+ */
+const parser = (tokens: Token[]): Program => {
+  let current = 0;
+  // 递归解析tokens
+  const walk = (): ASTNode => {
+    let token = tokens[current];
+
+    if (token.type === "number") {
+      current++;
+      return {
+        type: "NumberLiteral",
+        value: token.value,
+      } as NumberLiteral;
+    }
+
+    if (token.type === "string") {
+      current++;
+      return {
+        type: "StringLiteral",
+        value: token.value,
+      } as StringLiteral;
+    }
+
+    // 当我们遍历到 ( 时，意味着我们要对Lisp函数进行解析
+    if (token.type === "paren" && token.value === "(") {
+      token = tokens[++current]; // 跳过左括号
+      // 构建CallExpression节点
+      let node: CallExpression = {
+        type: "CallExpression",
+        name: token.value,
+        params: [],
+      };
+      token = tokens[++current]; // 跳过函数名
+
+      while (
+        token.type !== "paren" ||
+        (token.type === "paren" && token.value !== ")")
+      ) {
+        node.params.push(walk());
+        token = tokens[current];
+      }
+
+      current++;
+      return node;
+    }
+
+    throw new TypeError(`Unexpected token type: ${token.type}`);
+  };
+
+  // 构建AST根节点
+  let ast: Program = {
+    type: "Program",
+    body: [],
+  };
+
+  while (current < tokens.length) {
+    ast.body.push(walk());
+  }
+
+  return ast;
+};
+
+export { tokenizer, parser };
